@@ -49,8 +49,8 @@ const Users = mongoose.model("users",userSchema);
 const Order = mongoose.model("orders",ordersSchema);
 
 //server info
-let serverLoadCount = [0,0,0,0,0];
-const serverPortMapping = [0,3000,4000,5000,6000];
+var ptr = 1;
+const serverPortMapping = [0,3000,4000,5000,7000];
 
 //var to handle election algo
 var p =1;
@@ -59,11 +59,11 @@ var p =1;
 var connectionCount = [0,0,0,0,0];
 
 //server count
-const totalServers = 3;
+const totalServers = 4;
 
 //server ids
 const selfServerId = 1;
-var masterServerId = 3;
+var masterServerId = 4;
 
 //vars for critical section 
 var insideCriticalSection = 0;
@@ -74,18 +74,16 @@ var replyCount = 0;
 var queue = [];
 
 //function to return port of minimum load server
-function getListLoadServerPort()
+function getServerPort()
 {
-  var minLoad = 100000;
-  var minLoadServId = 0;
-
-  serverLoadCount.forEach((c,index) => {
-    if(c<minLoad){
-      minLoad = c;
-      minLoadServId = index;
-    }
-  });
-  return serverPortMapping[minLoadServId];
+  ptr = (ptr+1)%(totalServers+1);
+  if(ptr===0 || ptr===selfServerId){
+    ptr = (ptr+1)%(totalServers+1);
+  }
+  if(ptr===0 || ptr===selfServerId){
+    ptr = (ptr+1)%(totalServers+1);
+  }
+  return serverPortMapping[ptr];
 }
 
 
@@ -138,7 +136,7 @@ const io = require('socket.io')(http, {
 //connections with other servers
 const server2 = socketClient("http://localhost:4000");
 const server3 = socketClient("http://localhost:5000");
-const server4 = socketClient("http://localhost:6000");
+const server4 = socketClient("http://localhost:7000");
 
 //listen for new co-ordinator
 server2.on("broadcast",(serverId)=>{
@@ -242,16 +240,44 @@ server4.on("reply",(serverId)=>{
   }
 })
 
-server2.on("update-database",(data)=>{
-  eventEmitter.emit("update-database-info",data);
+//listen for database update - meals
+server2.on("update-database-meals",(data)=>{
+  eventEmitter.emit("update-database-meals-e",data);
 })
 
-server3.on("update-database",(data)=>{
-  eventEmitter.emit("update-database-info",data);
+server3.on("update-database-meals",(data)=>{
+  eventEmitter.emit("update-database-meals-e",data);
 })
 
-server4.on("update-database",(data)=>{
-  eventEmitter.emit("update-database-info",data);
+server4.on("update-database-meals",(data)=>{
+  eventEmitter.emit("update-database-meals-e",data);
+})
+
+
+//listen for database update - orders
+server2.on("update-database-orders",(data)=>{
+  eventEmitter.emit("update-database-orders-e",data);
+})
+
+server3.on("update-database-orders",(data)=>{
+  eventEmitter.emit("update-database-orders-e",data);
+})
+
+server4.on("update-database-orders",(data)=>{
+  eventEmitter.emit("update-database-orders-e",data);
+})
+
+//listen for database update - orders
+server2.on("update-database-users",(data)=>{
+  eventEmitter.emit("update-database-users-e",data);
+})
+
+server3.on("update-database-users",(data)=>{
+  eventEmitter.emit("update-database-users-e",data);
+})
+
+server4.on("update-database-users",(data)=>{
+  eventEmitter.emit("update-database-users-e",data);
 })
 
 //listen for incoming connections to socket
@@ -285,11 +311,22 @@ io.on('connection', socket => {
 });
 
 //emit event to update database 
-eventEmitter.on("update-database-info",(data) => {
+eventEmitter.on("update-database-meals-e",(data) => {
   Meals.updateOne({_id:1},{quantity:data.cheeseBurgerQuantity},(er1,rs1)=>{});
   Meals.updateOne({_id:2},{quantity:data.vegBurgerQuantity},(er1,rs1)=>{});
   Meals.updateOne({_id:3},{quantity:data.chickenBurgerQuantity},(er1,rs1)=>{});
 })
+
+eventEmitter.on("update-database-orders-e",(data) => {
+  const newOrder = new Order(data);
+  newOrder.save((err,result) => {})
+})
+
+eventEmitter.on("update-database-users-e",(data) => {
+  const newUser = new Users(data);
+  newUser.save((err,result) => {})
+})
+
 
 //emit event to send election election message to other servers
 eventEmitter.on("send election message",()=>{
@@ -303,11 +340,12 @@ eventEmitter.on("send election message",()=>{
       }
     }
     setTimeout(() => {
-      if(count==0)
+      if(count===0)
       {
            io.sockets.emit('broadcast',selfServerId);
+           masterServerId = selfServerId;
       }
-    },5000);
+    },10000);
     p=p-1;
   }
 })
@@ -329,6 +367,13 @@ eventEmitter.on("send reply",(req) => {
         queue.push(req.serverId);
     }
   }
+})
+
+
+app.get("/get-master-port",(req,res) => {
+  res.send({
+    masterPort:serverPortMapping[masterServerId]
+  });
 })
 
 //routes
@@ -384,7 +429,7 @@ app.post("/order-food",checkAuth,maintain_me_and_dc,(req,res)=>{
     }else{
       if(result1[0].quantity>= parseInt(cheeseBurgerQuantity) && result1[1].quantity>= parseInt(vegBurgerQuantity) && result1[2].quantity >= parseInt(chickenBurgerQuantity))
       {
-        const newOrder = new Order({
+        const _order = {
           name:name,
           surname:surname,
           email:email,
@@ -395,7 +440,9 @@ app.post("/order-food",checkAuth,maintain_me_and_dc,(req,res)=>{
           contact:contact,
           orderStatus:"-",
           userId:req.body.userData.userId
-        })
+        };
+
+        const newOrder = new Order(_order);
 
         newOrder.save((err2,result2) => {
           if(err2){
@@ -409,11 +456,12 @@ app.post("/order-food",checkAuth,maintain_me_and_dc,(req,res)=>{
               vegBurgerQuantity:result1[0].quantity-parseInt(vegBurgerQuantity),
               chickenBurgerQuantity:result1[0].quantity-parseInt(chickenBurgerQuantity)
             }
-            eventEmitter.emit("update-database-info",data);
+            eventEmitter.emit("update-database-meals-e",data);
             for(var i=1;i<=totalServers;i++)
             {
               if(i!==selfServerId){
-                io.to(i).emit("update-database",data);
+                io.to(i).emit("update-database-meals",data);
+                io.to(i).emit("update-database-orders",_order);
               }
             }
             insideCriticalSection = 0;
@@ -437,6 +485,19 @@ app.post("/order-food",checkAuth,maintain_me_and_dc,(req,res)=>{
       }
     }
   })
+})
+
+app.get("/",(req,res) => {
+  if(selfServerId===masterServerId){
+    res.redirect(`http://localhost:${getServerPort()}?f=m`)
+  }
+  else if(req.query.f==="m"){
+    res.render("home");
+  }
+  else
+  {
+    res.redirect(`http://localhost:${serverPortMapping[masterServerId]}?f=m`)
+  }
 })
 
 app.get("/login",(req,res) => {
@@ -471,11 +532,11 @@ app.post("/login",async function(req,res){
                     },
                     process.env.JWT_KEY,
                     {
-                        expiresIn: 600000000
+                        expiresIn: 3600000 
                     }
                 )
                 let options = {
-                  maxAge: 600000000, // would expire after 1 minuite
+                  maxAge: 3600000 , // would expire after 1 minuite
                   httpOnly: true, // The cookie only accessible by the web server
                 }
           
@@ -510,12 +571,14 @@ app.post("/register",async function(req,res){
       }else{
           bcrypt.hash(password,2,(err,hash) => {
 
-            const newUser = new Users({
+            const _user = {
               email:email,
               password:hash,
               name:name,
               surname:surname
-            })
+            };
+
+            const newUser = new Users(_user);
             
             newUser.save((err2,result2) => {
               if(err2){
@@ -538,7 +601,13 @@ app.post("/register",async function(req,res){
                     maxAge: 600000000, // would expire after 1 minuite
                     httpOnly: true, // The cookie only accessible by the web server
                   }
-            
+                  for(var i=1;i<=totalServers;i++)
+                  {
+                    if(i!=selfServerId)
+                    {
+                      io.to(i).emit("update-database-users",_user);
+                    }
+                  }  
                   res.cookie('x-access-token',token, options) 
                   res.redirect("/food-items");
                 }else{

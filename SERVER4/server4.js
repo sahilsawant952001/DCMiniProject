@@ -12,7 +12,7 @@ const checkAuth = require("./checkAuth");
 var cookieParser = require('cookie-parser');
 
 //db connection
-mongoose.connect("mongodb://localhost:27017/foodDB3",{useNewUrlParser:true ,useUnifiedTopology:true});
+mongoose.connect("mongodb://localhost:27017/foodDB4",{useNewUrlParser:true ,useUnifiedTopology:true});
 
 //db schemas
 const mealsSchema = {
@@ -62,7 +62,7 @@ var connectionCount = [0,0,0,0,0];
 const totalServers = 4;
 
 //server ids
-const selfServerId = 3;
+const selfServerId = 4;
 var masterServerId = 4;
 
 //vars for critical section 
@@ -136,7 +136,7 @@ const io = require('socket.io')(http, {
 //connections with other servers
 const server1 = socketClient("http://localhost:3000");
 const server2 = socketClient("http://localhost:4000");
-const server4 = socketClient("http://localhost:7000");
+const server3 = socketClient("http://localhost:5000");
 
 //listen for new co-ordinator
 server1.on("broadcast",(serverId)=>{
@@ -153,7 +153,7 @@ server2.on("broadcast",(serverId)=>{
   count = 0;
 })
 
-server4.on("broadcast",(serverId)=>{
+server3.on("broadcast",(serverId)=>{
   console.log("server ",serverId," is coordinator");
   masterServerId = serverId;
   p = 1;
@@ -169,6 +169,10 @@ server2.on("election message",serverId => {
   io.to(serverId).emit("okay message",selfServerId);
 })
 
+server3.on("election message",serverId => {
+  io.to(serverId).emit("okay message",selfServerId);
+})
+
 //listen for newly initiated election
 server1.on("init",(serverId)=>{
   console.log("server ",serverId," initiated election");
@@ -178,7 +182,7 @@ server2.on("init",(serverId)=>{
   console.log("server ",serverId," initiated election");
 })
 
-server4.on("init",(serverId)=>{
+server3.on("init",(serverId)=>{
   console.log("server ",serverId," initiated election");
 })
 
@@ -193,7 +197,7 @@ server2.on("okay message",(serverId)=>{
     count = count + 1;
 })
 
-server4.on("okay message",(serverId)=>{
+server3.on("okay message",(serverId)=>{
     console.log("okay message from ",serverId)
     count = count + 1;
 })
@@ -207,7 +211,7 @@ server2.on("master-id",(serverId)=>{
   masterServerId = serverId;
 })
 
-server4.on("master-id",(serverId)=>{
+server3.on("master-id",(serverId)=>{
   masterServerId = serverId;
 })
 
@@ -220,7 +224,7 @@ server2.on("request",(req)=>{
   eventEmitter.emit("send reply",req);
 })
 
-server4.on("request",(req)=>{
+server3.on("request",(req)=>{
   eventEmitter.emit("send reply",req);
 })
 
@@ -241,7 +245,7 @@ server2.on("reply",(serverId)=>{
   }
 })
 
-server4.on("reply",(serverId)=>{
+server3.on("reply",(serverId)=>{
   replyCount = replyCount + 1;
   if(replyCount===totalServers-1)
   {
@@ -258,7 +262,7 @@ server2.on("update-database-meals",(data)=>{
   eventEmitter.emit("update-database-meals-e",data);
 })
 
-server4.on("update-database-meals",(data)=>{
+server3.on("update-database-meals",(data)=>{
   eventEmitter.emit("update-database-meals-e",data);
 })
 
@@ -272,7 +276,7 @@ server2.on("update-database-orders",(data)=>{
   eventEmitter.emit("update-database-orders-e",data);
 })
 
-server4.on("update-database-orders",(data)=>{
+server3.on("update-database-orders",(data)=>{
   eventEmitter.emit("update-database-orders-e",data);
 })
 
@@ -285,7 +289,7 @@ server2.on("update-database-users",(data)=>{
   eventEmitter.emit("update-database-users-e",data);
 })
 
-server4.on("update-database-users",(data)=>{
+server3.on("update-database-users",(data)=>{
   eventEmitter.emit("update-database-users-e",data);
 })
 
@@ -299,8 +303,8 @@ io.on('connection', socket => {
     io.to(serverId).emit("master-id",masterServerId);
     if(connectionCount[serverId]>1)
     {
-      if(serverId===4){
-        server4.emit("join",selfServerId);
+      if(serverId===3){
+        server3.emit("join",selfServerId);
       }else if(serverId===1){
         server1.emit("join",selfServerId);
       }else if(serverId===2){
@@ -634,12 +638,12 @@ app.get('/logout', (req, res) => {
   res.redirect("/");
 });
 
-http.listen(5000, function() {
-  console.log('Food App Server 1 Listening On Port ',5000);
+http.listen(7000, function() {
+  console.log('Food App Server 1 Listening On Port ',7000);
   setTimeout(()=>{
     server1.emit("join",selfServerId);
     server2.emit("join",selfServerId);
-    server4.emit("join",selfServerId);
+    server3.emit("join",selfServerId);
     setTimeout(() => {
       if(masterServerId<selfServerId){
         io.sockets.emit('init',selfServerId);
@@ -655,7 +659,7 @@ addExitCallback((signal) => {
       new Promise((resolve) => {
           server1.emit("leave",selfServerId);
           server2.emit("leave",selfServerId);
-          server4.emit("leave",selfServerId);
+          server3.emit("leave",selfServerId);
           resolve();
       });
   }
