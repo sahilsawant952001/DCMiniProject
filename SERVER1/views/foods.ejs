@@ -7,10 +7,12 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
   <link rel="stylesheet" href="css/bootstrap-social.css">
   <link rel="stylesheet" href="css/styles.css">
+  <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap" rel="stylesheet">
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container-fluid">
+    <!-- <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
         <a class="navbar-brand" href="/food-items">Food App</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -32,8 +34,58 @@
             
         </div>
         </div>
-    </nav>
-    <div class="container mt-5">
+    </nav> -->
+
+    <nav class="container mx-auto flex items-center justify-between py-4 navbar">
+        <div>
+            <a href="/food-items" class="heading"><h1>BHOJAN</h1></a>
+        </div>
+        <div>
+            <ul class="flex items-center">
+                <li class='ml-6'><a href="#menu">Menu</a></li>
+                <li class='ml-6'><a href="/my-orders">My orders</a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/place-order"> Welcome <%= name %><%= surname %></a>
+                </li>
+            </ul>
+        </div>
+    </nav> 
+
+    <section class="hero flex py-16">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="w-1/2">
+                <h6 class="text-lg mb-6 "><em class="subheading">Why starve when you have us</em></h6>
+                <h1 class="text-6xl font-bold heading">BHOJAN</h1>
+                <a href="#menu"><button class="px-6 py-3 rounded-full text-white font-bold mt-8 btn-primary">Order now</button></a>
+            </div>
+            <div class="w-1/2">
+                <img class="" src="/images/home_food.jpg" alt="">
+            </div>
+        </div>
+    </section>
+    <center class="mt-12" id="menu">
+    <h1 class="text-3xl font-bold mb-4">Menu: </h1>
+    <section class="menu container mx-auto py-8 items-center menu">
+        <div class="grid grid-cols-3 col-gap-12 items-center">
+            <% foodItems.forEach(function(foodItem){ %>
+                <div class="w-64 card border-2 rounded-xl shadow-xl items-center">
+                    <img class="h-40 mb-4 mx-auto rounded-xl my-2 mx-2" src="<%= foodItem.imageUrl %>" alt="Card image cap">
+                    <div class="text-center">
+                        <hr width="50%" class="mx-auto">
+                        <h2 class="mb-4 text-lg font-bold mt-2">Name : <%= foodItem.name %></h2>
+                        <span >Available Quantity: <%= foodItem.quantity %></span>
+                        <div class="flex items-center justify-around mt-6">
+                            <span class="font-bold mb-4">₹ <%= foodItem.price %></span>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    </section>
+    <a href="/place-order" class="btn btn-primary btn-lg mb-5 mt-8">Place Order</a>
+    </center>
+
+    <!-- <div class="container mt-5">
         <center>
             <% foodItems.forEach(function(foodItem){ %>
             <div class="card" style="width: 30%; display: inline-block;">
@@ -50,7 +102,7 @@
             <br/>
             <a href="/place-order" class="btn btn-primary btn-lg">Place Order</a>
         </center>
-    </div>
+    </div> -->
     
 </body>
 </html>

@@ -1,6 +1,9 @@
-
+html {
+  scroll-behavior: smooth;
+ }
+ 
 body {
-    background-color: #E8ECEF;
+    /* background-color: #E8ECEF; */
   }
   
   .centered {
@@ -15,3 +18,15 @@ body {
     background-color: #000;
   }
   
+
+  .heading{
+    font-family: 'Architects Daughter', cursive;
+  }
+  
+  .navbar{
+    border-bottom: 1px solid rgb(212, 212, 212);
+  }
+
+  .menu{
+    padding-left: 120px;
+  }

@@ -132,6 +132,7 @@ app.use(express.json())
 app.set('eventEmitter',eventEmitter);
 app.set('view engine', 'ejs');
 app.use(cookieParser())
+app.use(express.static("public"));
 
 //count
 var count = 0;
