@@ -11,17 +11,17 @@
 <body>
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/food-items">Food App</a>
+        <a class="navbar-brand" href="/admin/orders">Food App Admin</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" href="/my-orders">My Orders</a>
+                    <a class="nav-link" href="/admin/orders/completed-orders">Completed Orders</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/place-order">Place Order</a>
+                    <a class="nav-link" href="/admin/orders/cancelled-orders">Cancelled Orders</a>
                 </li>
             </ul>
         </div>
@@ -35,23 +35,27 @@
             <p>Cheese Burger Quantity : <%= order.cheeseBurgerQuantity %></p>
             <p>Veg Burger Quantity : <%= order.vegBurgerQuantity %></p>
             <p>Chicken Burger Quantity : <%= order.chickenBurgerQuantity %></p>
+            <p>Name : <%= order.name %></p>
+            <p>Surname : <%= order.surname %></p>
+            <p>Email : <%= order.email %></p>
             <p>Address : <%= order.address %></p>
             <p>Contact : <%= order.contact %></p>
             <p>Order Status : <%= order.orderStatus %></p>
-            <% if(order.orderStatus!=="completed") { %>
-              <form action="/cancel-order" method="post">
-                <div class="row">
-                  <div class="col-lg-6">
-                    <input type="text" class="form-control" name="orderId" placeholder="Enter Order Id To Cancel Order">
-                  </div>
-                  <div class="col-lg-6">
-                    <button type="submit" class="btn btn-primary">Cancel Order</button>
-                  </div>
-                </div>
-              </form>
+            <% if(order.orderStatus !== "completed" && order.orderStatus !== "cancelled") { %>
+            <form action="/admin/orders/update/<%= order._id %>" method="post">
+                <select name="orderStatus" class="form-select form-select-sm">
+                    <option value="placed">Placed</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="under preparation">Under Prepartion</option>
+                    <option value="out for delivery">Out For Delivery</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <button type="submit" class="btn btn-primary">Update Order Status</button>
+            </form>
             <% } %>
         </div>
       </div>
 </div>
+<br/><br/><br/><br/>
 </body>
 </html>

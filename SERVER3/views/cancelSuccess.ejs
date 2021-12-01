@@ -27,31 +27,18 @@
         </div>
         </div>
     </nav>
-    <div class="container mt-5">
-      <h4>Order ID : <%= order._id %></h4>
-      <br/><br/>
-      <div class="card">
-        <div class="card-body">
-            <p>Cheese Burger Quantity : <%= order.cheeseBurgerQuantity %></p>
-            <p>Veg Burger Quantity : <%= order.vegBurgerQuantity %></p>
-            <p>Chicken Burger Quantity : <%= order.chickenBurgerQuantity %></p>
-            <p>Address : <%= order.address %></p>
-            <p>Contact : <%= order.contact %></p>
-            <p>Order Status : <%= order.orderStatus %></p>
-            <% if(order.orderStatus!=="completed") { %>
-              <form action="/cancel-order" method="post">
-                <div class="row">
-                  <div class="col-lg-6">
-                    <input type="text" class="form-control" name="orderId" placeholder="Enter Order Id To Cancel Order">
-                  </div>
-                  <div class="col-lg-6">
-                    <button type="submit" class="btn btn-primary">Cancel Order</button>
-                  </div>
-                </div>
-              </form>
-            <% } %>
-        </div>
+  <div class="container mt-5">
+    <div class="card">
+      <div class="card-body">
+          <h5>Order Cancelled Successfully</h5>
+          <br><br>
+          <h5>Order ID : <%= orderId %></h5>
+          <br><br>
+          <a class="btn btn-primary" href="/food-items">New Order</a>&nbsp;&nbsp;&nbsp;&nbsp;
+          <a class="btn btn-primary" href="/my-orders">Your Orders</a>
       </div>
-</div>
+    </div>
+    
+  </div>
 </body>
 </html>

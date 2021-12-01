@@ -285,6 +285,30 @@ server4.on("update-database-users",(data)=>{
   eventEmitter.emit("update-database-users-e",data);
 })
 
+server1.on("cancel-database-order",(data)=>{
+  eventEmitter.emit("cancel-database-order-e",data);
+})
+
+server3.on("cancel-database-order",(data)=>{
+  eventEmitter.emit("cancel-database-order-e",data);
+})
+
+server4.on("cancel-database-order",(data)=>{
+  eventEmitter.emit("cancel-database-order-e",data);
+})
+
+server1.on("admin-order-status-update",(data)=>{
+  eventEmitter.emit("admin-order-status-update-e",data);
+})
+
+server3.on("admin-order-status-update",(data)=>{
+  eventEmitter.emit("admin-order-status-update-e",data);
+})
+
+server4.on("admin-order-status-update",(data)=>{
+  eventEmitter.emit("admin-order-status-update-e",data);
+})
+
 //listen for incoming connections to socket
 io.on('connection', socket => {
   //join event
@@ -332,6 +356,13 @@ eventEmitter.on("update-database-users-e",(data) => {
   newUser.save((err,result) => {})
 })
 
+eventEmitter.on("cancel-database-order-e",(orderId) => {
+  Order.updateOne({_id:orderId},{orderStatus:"cancelled"},(err,result) => {})
+})
+
+eventEmitter.on("admin-order-status-update-e",(data) => {
+  Order.updateOne({_id:data.orderId},{orderStatus:data.orderStatus},(err,result) => {});
+})
 
 //emit event to send election election message to other servers
 eventEmitter.on("send election message",()=>{
@@ -372,6 +403,92 @@ eventEmitter.on("send reply",(req) => {
         queue.push(req.serverId);
     }
   }
+})
+
+app.get("/admin/orders/cancelled-orders",(req,res) => {
+  Order.find({orderStatus:"cancelled"},(err,result) => {
+    if(err){
+      res.redirect("error");
+    }else{
+      res.render("adminCancelledOrders",{title:"Cancelled Orders",cancelledOrders:result});
+    }
+  })
+})
+
+app.get("/admin/orders/completed-orders",(req,res) => {
+  Order.find({orderStatus:"completed"},(err,result) => {
+    if(err){
+      res.redirect("error");
+    }else{
+      res.render("adminCompletedOrders",{title:"Completed Orders",completedOrders:result});
+    }
+  })
+})
+
+app.get("/admin/orders",(req,res) => {
+  Order.find({$and : [{orderStatus: {$ne:"completed"}},{orderStatus:{$ne : "cancelled"}}]},(err,result) => {
+    if(err){
+      res.redirect("error");
+    }else{
+      res.render("adminOrders",{pendingOrders:result});
+    }
+  })
+})
+
+app.get("/admin/orders/:orderId",(req,res) => {
+  Order.find({_id:req.params.orderId},(err,result) => {
+    if(err){
+      res.render("error");
+    }else{
+      console.log(result)
+      res.render("adminOrderUpdate",{order:result[0]});
+    }
+  })
+})
+
+app.post("/admin/orders/update/:orderId",(req,res) => {
+  Order.updateOne({_id:req.params.orderId},{orderStatus:req.body.orderStatus},(err,result) => {
+    if(err){
+      res.render("error")
+    }else{
+      const data = {
+        orderId:req.params.orderId,
+        orderStatus:req.body.orderStatus
+      }
+      for(var i=1;i<=totalServers;i++)
+      {
+        if(i!==selfServerId)
+        {
+          io.to(i).emit("admin-order-status-update",data)
+        }
+      }
+      res.redirect("/admin/orders");
+    }
+  })
+})
+
+
+app.post("/cancel-order",checkAuth,(req,res) => {
+  const orderId = req.body.orderId;
+  Order.deleteOne({_id:orderId},(err,result) => {
+    if(err){
+      const path = "/my-orders/"+orderId;
+      res.redirect(path)
+    }else{
+      for(var i = 1;i<=totalServers;i++)
+      {
+        if(i!=selfServerId)
+        {
+          io.to(i).emit("cancel-database-order",orderId);
+        }
+      }
+      res.render("cancelSuccess",{orderId:orderId});
+    }
+  })
+})
+
+app.get("/place-order",checkAuth,(req,res) => {
+  res.render("placeOrder");
 })
 
 
@@ -461,6 +578,7 @@ app.post("/order-food",checkAuth,maintain_me_and_dc,(req,res)=>{
               vegBurgerQuantity:result1[0].quantity-parseInt(vegBurgerQuantity),
               chickenBurgerQuantity:result1[0].quantity-parseInt(chickenBurgerQuantity)
             }
+            _order._id = result2._id;
             eventEmitter.emit("update-database-meals-e",data);
             for(var i=1;i<=totalServers;i++)
             {
@@ -477,7 +595,7 @@ app.post("/order-food",checkAuth,maintain_me_and_dc,(req,res)=>{
               queue = queue.slice(1,queue.length);
             }
             console.log("server 1 outside critical section");
-            res.render("orderSuccess");
+            res.render("orderSuccess",{orderId:result2._id});
           }
         })
       }
@@ -533,7 +651,8 @@ app.post("/login",async function(req,res){
                       userId:result1[0]._id,
                       email:email,
                       name:result1[0].name,
-                      surname:result1[0].surname
+                      surname:result1[0].surname,
+                      time:new Date()
                     },
                     process.env.JWT_KEY,
                     {
@@ -590,6 +709,7 @@ app.post("/register",async function(req,res){
                 res.redirect("/register");
               }else{
                 if(result2!==null && result2!==undefined){
+                  _user._id = result2._id;
                   const token = jwt.sign(
                     {
                         userId:result2._id,

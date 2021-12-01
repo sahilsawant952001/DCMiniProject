@@ -9,9 +9,36 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-<div class="container mt-5">
-  <h1> Order Successfull </h1>
-  <a class="btn btn-primary" href="/food-items">Order More</a>
-</div>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/food-items">Food App</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="/my-orders">My Orders</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/place-order">Place Order</a>
+                </li>
+            </ul>
+        </div>
+        </div>
+    </nav>
+  <div class="container mt-5">
+    <div class="card">
+      <div class="card-body">
+          <h5>Order Placed Successfully</h5>
+          <br><br>
+          <h5>Order ID : <%= orderId %></h5>
+          <br><br>
+          <a class="btn btn-primary" href="/food-items">Order More</a>&nbsp;&nbsp;&nbsp;&nbsp;
+          <a class="btn btn-primary" href="/my-orders/<%= orderId %>">Track Order</a>
+      </div>
+    </div>
+    
+  </div>
 </body>
 </html>
