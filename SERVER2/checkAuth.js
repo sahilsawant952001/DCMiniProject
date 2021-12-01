@@ -8,7 +8,16 @@ module.exports = (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_KEY);
         req.userData = decoded;
         req.body.userData = decoded;
-        next();
+        if(decoded.role==="user")
+        {
+            next();
+        }
+        else{
+            return res.status(401).json({
+                success:false,
+                message: 'unauthorized user'
+            });
+        }
 
     } catch (error) {
         return res.status(401).json({

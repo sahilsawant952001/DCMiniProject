@@ -10,6 +10,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const checkAuth = require("./checkAuth");
 var cookieParser = require('cookie-parser');
+const checkAuthAdmin = require("./checkAuthAdmin");
 
 //db connection
 mongoose.connect("mongodb://localhost:27017/foodDB2",{useNewUrlParser:true ,useUnifiedTopology:true});
@@ -43,10 +44,20 @@ const ordersSchema = {
   orderStatus:String
 }
 
+
+const adminSchema = {
+  email:String,
+  password:String,
+  name:String,
+  surname:String
+}
+
+
 //db models
 const Meals = mongoose.model("meals",mealsSchema);
 const Users = mongoose.model("users",userSchema);
 const Order = mongoose.model("orders",ordersSchema);
+const Admin = mongoose.model("admins",adminSchema);
 
 //server info
 var ptr = 1;
@@ -440,7 +451,6 @@ app.get("/admin/orders/:orderId",(req,res) => {
     if(err){
       res.render("error");
     }else{
-      console.log(result)
       res.render("adminOrderUpdate",{order:result[0]});
     }
   })
@@ -482,13 +492,13 @@ app.post("/cancel-order",checkAuth,(req,res) => {
           io.to(i).emit("cancel-database-order",orderId);
         }
       }
-      res.render("cancelSuccess",{orderId:orderId});
+      res.render("cancelSuccess",{orderId:orderId,name:req.body.userData.name,surname:req.body.userData.surname});
     }
   })
 })
 
 app.get("/place-order",checkAuth,(req,res) => {
-  res.render("placeOrder");
+  res.render("placeOrder",{name:req.body.userData.name,surname:req.body.userData.surname});
 })
 
 
@@ -504,7 +514,7 @@ app.get("/my-orders/:orderId",checkAuth,(req,res) => {
     if(err){
       res.render("error",{errorMessage:("failed fetch details of order"+req.params.orderId)});
     }else{
-      res.render("order",{order:result[0]});
+      res.render("order",{order:result[0],name:req.body.userData.name,surname:req.body.userData.surname});
     }
   })
 })
@@ -516,17 +526,17 @@ app.get("/my-orders",checkAuth,(req,res) => {
     if(err){
       res.render("error",{errorMessage:"failed fetch your orders"});
     }else{
-      res.render("myOrders",{myOrders:result});
+      res.render("myOrders",{myOrders:result,name:req.body.userData.name,surname:req.body.userData.surname});
     }
   })
 })
 
-app.get("/food-items",(req,res)=>{
+app.get("/food-items",checkAuth,(req,res)=>{
   Meals.find({},(err,result)=>{
     if(err){
       res.render("error",{errorMessage:"Failed To Failed To Fetch Details Of Food Items"});
     }else{
-      res.render("foods",{foodItems:result});
+      res.render("foods",{foodItems:result,name:req.body.userData.name,surname:req.body.userData.surname});
     }
   })
 })
@@ -536,11 +546,26 @@ app.post("/order-food",checkAuth,maintain_me_and_dc,(req,res)=>{
   const name = req.body.userData.name;
   const surname = req.body.userData.surname;
   const email = req.body.userData.email;
-  const cheeseBurgerQuantity = req.body.cheese_burger_quantity;
-  const vegBurgerQuantity = req.body.veg_burger_quantity;
-  const chickenBurgerQuantity = req.body.chicken_burger_quantity;
+  var cheeseBurgerQuantity = req.body.cheese_burger_quantity;
+  var vegBurgerQuantity = req.body.veg_burger_quantity;
+  var chickenBurgerQuantity = req.body.chicken_burger_quantity;
   const address = req.body.address;
   const contact = req.body.contact;
+
+  if(cheeseBurgerQuantity===undefined || cheeseBurgerQuantity==="" || cheeseBurgerQuantity===null)
+  {
+    cheeseBurgerQuantity = 0;
+  }
+
+  if(vegBurgerQuantity===undefined || vegBurgerQuantity ==="" || vegBurgerQuantity===null)
+  {
+    vegBurgerQuantity = 0;
+  }
+
+  if(chickenBurgerQuantity===undefined || chickenBurgerQuantity==="" || chickenBurgerQuantity===null)
+  {
+    chickenBurgerQuantity = 0;
+  }
 
   Meals.find({},(err1,result1) => {
     if(err1){
@@ -595,7 +620,7 @@ app.post("/order-food",checkAuth,maintain_me_and_dc,(req,res)=>{
               queue = queue.slice(1,queue.length);
             }
             console.log("server 1 outside critical section");
-            res.render("orderSuccess",{orderId:result2._id});
+            res.render("orderSuccess",{orderId:result2._id,name:req.body.userData.name,surname:req.body.userData.surname});
           }
         })
       }
@@ -631,6 +656,10 @@ app.get("/register",(req,res) => {
   res.render("register");
 })
 
+app.get("/admin/login",(req,res) => {
+  res.render("adminLogin");
+})
+
 app.post("/login",async function(req,res){
   
   const email = req.body.email;
@@ -652,7 +681,7 @@ app.post("/login",async function(req,res){
                       email:email,
                       name:result1[0].name,
                       surname:result1[0].surname,
-                      time:new Date()
+                      role:"user"
                     },
                     process.env.JWT_KEY,
                     {
@@ -675,6 +704,56 @@ app.post("/login",async function(req,res){
       else
       {
         res.redirect("/login");
+      }
+    }
+  })
+})
+
+app.post("/admin/login",async function(req,res){
+  
+  const email = req.body.email;
+  const password = req.body.password;
+
+  Admin.find({email:email},(err1,result1)=>{
+    if(err1){
+      res.redirect("/admin/login");
+    }else{
+      if(result1.length!==0)
+      {
+          bcrypt.compare(password, result1[0].password, function(err, result2) 
+          {  
+            if(result2===true)
+            {
+                const token = jwt.sign(
+                    {
+                      userId:result1[0]._id,
+                      email:email,
+                      name:result1[0].name,
+                      surname:result1[0].surname,
+                      time:new Date(),
+                      role:"admin"
+                    },
+                    process.env.JWT_KEY,
+                    {
+                        expiresIn: 3600000 
+                    }
+                )
+                let options = {
+                  maxAge: 3600000 , // would expire after 1 minuite
+                  httpOnly: true, // The cookie only accessible by the web server
+                }
+          
+                res.cookie('x-access-token',token, options) 
+                res.redirect("/admin/orders");
+            }else
+            {
+              res.redirect("/admin/login");
+            }
+        });
+      }
+      else
+      {
+        res.redirect("/admin/login");
       }
     }
   })
@@ -715,7 +794,9 @@ app.post("/register",async function(req,res){
                         userId:result2._id,
                         email:email,
                         name:name,
-                        surname:surname
+                        surname:surname,
+                        role:"user"
+
                     },
                     process.env.JWT_KEY,
                     {
@@ -744,6 +825,91 @@ app.post("/register",async function(req,res){
       }
     }
   })
+})
+
+app.get("/admin/update-food",checkAuthAdmin,(req,res) => {
+  res.render("adminUpdateFoodQuantity");
+})
+
+app.post("/admin/update-food",checkAuthAdmin,maintain_me_and_dc,(req,res) => {
+  var cheese_burger_quantity = req.body.cheese_burger_quantity;
+  var veg_burger_quantity = req.body.veg_burger_quantity;
+  var chicken_burger_quantity = req.body.chicken_burger_quantity;
+
+  const data = {
+    cheeseBurgerQuantity:cheese_burger_quantity,
+    vegBurgerQuantity:veg_burger_quantity,
+    chickenBurgerQuantity:chicken_burger_quantity
+  }
+
+  console.log("--> 1")
+  Meals.findById({_id:1},(err1,result1)=>
+  {
+    if(err1)
+    {
+      console.log("error 1",err1);
+    }
+    else
+    {
+      if(cheese_burger_quantity!==undefined && cheese_burger_quantity!=="" && cheese_burger_quantity!==null)
+      {
+        result1.quantity = cheese_burger_quantity;
+        result1.save();
+      }
+      else
+      {
+        data.cheeseBurgerQuantity = result1.quantity;
+      }
+      Meals.findById({_id:2},(err2,result2)=>
+      {
+        if(err2)
+        {
+          console.log("error 2",err2);
+        }
+        else
+        {
+          if(veg_burger_quantity!==undefined && veg_burger_quantity!=="" && veg_burger_quantity!==null)
+          {
+            result2.quantity = veg_burger_quantity;
+            result2.save();
+          }
+          else
+          {
+            data.vegBurgerQuantity = result2.quantity;
+          }
+          Meals.findById({_id:3},(err3,result3)=>
+          {
+            if(err2)
+            {
+              console.log("error 3",err3);
+            }
+            else
+            {
+              if(chicken_burger_quantity!==undefined && chicken_burger_quantity!=="" && chicken_burger_quantity!==null)
+              {
+                result3.quantity = chicken_burger_quantity;
+                result3.save();
+              }
+              else
+              {
+                data.chickenBurgerQuantity = result3.quantity;
+              }
+              for(var i=1;i<=totalServers;i++)
+              {
+                if(i!==selfServerId)
+                {
+                  io.to(i).emit("update-database-meals",data)
+                }
+              }
+            }
+          })
+        }
+      })
+    }
+  })
+  replyCount = 0;
+  insideCriticalSection = 0;
+  res.redirect("/admin/orders");
 })
 
 app.get('/logout', (req, res) => {
