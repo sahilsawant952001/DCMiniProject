@@ -41,7 +41,8 @@ const ordersSchema = {
   chickenBurgerQuantity:Number,
   address:String,
   contact:String,
-  orderStatus:String
+  orderStatus:String,
+  date:Date
 }
 
 const adminSchema = {
@@ -595,7 +596,8 @@ app.post("/order-food",checkAuth,maintain_me_and_dc,(req,res)=>{
           address:address,
           contact:contact,
           orderStatus:"-",
-          userId:req.body.userData.userId
+          userId:req.body.userData.userId,
+          date: new Date()
         };
 
         const newOrder = new Order(_order);
