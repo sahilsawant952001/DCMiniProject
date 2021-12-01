@@ -7,9 +7,22 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
   <link rel="stylesheet" href="css/bootstrap-social.css">
   <link rel="stylesheet" href="css/styles.css">
+  <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap" rel="stylesheet">
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <nav class="container mx-auto flex items-center justify-between py-4 navbar">
+    <div>
+        <a href="/food-items" class="heading"><h1>BHOJAN</h1></a>
+    </div>
+    <div>
+        <ul class="flex items-center">
+            <li class='ml-6'><a href="/food-items">Menu</a></li>
+            <li class='ml-6'><a href="/my-orders">My orders</a></li>
+        </ul>
+    </div>  
+  </nav> 
+  <!-- <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
         <a class="navbar-brand" href="/food-items">Food App</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -26,7 +39,7 @@
             </ul>
         </div>
         </div>
-    </nav>
+    </nav> -->
     <div class="container mt-5">
       <h4>Order ID : <%= order._id %></h4>
       <br/><br/>
@@ -39,7 +52,7 @@
             <p>Contact : <%= order.contact %></p>
             <p>Order Status : <%= order.orderStatus %></p>
             <% if(order.orderStatus!=="completed") { %>
-              <form action="/cancel-order" method="post">
+              <form action="/cancel-order" method="post" class="mt-12">
                 <div class="row">
                   <div class="col-lg-6">
                     <input type="text" class="form-control" name="orderId" placeholder="Enter Order Id To Cancel Order">
